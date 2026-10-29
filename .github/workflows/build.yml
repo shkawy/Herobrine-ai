@@ -1,20 +1,49 @@
+
 name: build
-on: [push, workflow_dispatch]
+
+on:
+  push:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: current
-      - run: unzip -o kriti.zip
-      - run: gradle build
-      - uses: actions/upload-artifact@v4
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Extract Kriti
+        run: |
+          if [ -f kriti.zip ]; then
+            unzip -o kriti.zip -d kriti-src
+          else
+            echo "kriti.zip not found"
+            exit 1
+          fi
+
+      - name: Build Kriti
+        run: |
+          cd kriti-src
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+            ./gradlew build
+          else
+            gradle build
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: kriti-jar
-          path: build/libs/*.jar
+          path: kriti-src/**/build/libs/*.jar
+          if-no-files-found: error
